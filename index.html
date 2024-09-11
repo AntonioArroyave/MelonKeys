@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MelonKeys</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Automatizador de Tareas</h1>
+    <table id="shortcutsTable">
+        <tr>
+            <th>Combinación de Teclas</th>
+            <th>Descripción</th>
+        </tr>
+    </table>
+
+    <div id="notification">
+        <p id="message"></p>
+        <button id="close-button" onClick="closeNotification()">
+            Cerrar
+        </button>
+        <button id="restart-button" onClick="restartApp()" style="display: none;">
+            Reiniciar
+        </button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        ipcRenderer.send('get-shortcuts');
+        
+        ipcRenderer.on('shortcuts', (event, shortcuts) => {
+            const table = document.getElementById('shortcutsTable');
+            shortcuts.forEach(shortcut => {
+                const row = table.insertRow();
+                const keyCell = row.insertCell(0);
+                const descCell = row.insertCell(1);
+                keyCell.textContent = shortcut.key;
+                descCell.textContent = shortcut.description;
+            });
+        });
+
+        ipcRenderer.on('update_available', () => {
+            ipcRenderer.removeAllListeners('update_available');
+            document.getElementById('message').innerText = 'Hay una actualización disponible. Se descargará automáticamente.';
+            document.getElementById('notification').style.display = 'block';
+        });
+        
+        ipcRenderer.on('update_downloaded', () => {
+            ipcRenderer.removeAllListeners('update_downloaded');
+            document.getElementById('message').innerText = 'Actualización descargada. Se instalará al reiniciar. ¿Reiniciar ahora?';
+            document.getElementById('restart-button').style.display = 'block';
+            document.getElementById('notification').style.display = 'block';
+        });
+
+        function closeNotification() {
+            document.getElementById('notification').style.display = 'none';
+        }
+        
+        function restartApp() {
+            ipcRenderer.send('restart_app');
+        }
+    </script>
+</body>
+</html>
